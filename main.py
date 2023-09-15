@@ -38,34 +38,82 @@ licSearchBox = driver.find_element(By.ID, value='LicLicenseNumbere')
 # results = driver.find_element(By.ID, value='ngdialog1')
 # print(results.text)
 
-licTest = ['000001', '020056']
-licList = []
+licTest = ['020056', '020150']
+# licList = []
+licList = {}
 
 wb = openpyxl.load_workbook('CS Associated DOBNOW Filings.xlsx')
 ws = wb['Sheet2']
-print(ws.max_row+1)
 
 for x in range(2, ws.max_row+1):
-    licList.append({
-      "licensee": ws.cell(x, column=1).value
-    })
+    licList[ws.cell(x,column=1).value] = []
+    # licList.append({
+    #     "licensee": ws.cell(x, column=1).value,
+    #     "job1": ws.cell(x, column=2).value,
+    #     "job2": ws.cell(x, column=3).value,
+    #     "job3": ws.cell(x, column=4).value,
+    #     "job4": ws.cell(x, column=5).value,
+    #     "job5": ws.cell(x, column=6).value,
+    #     "job6": ws.cell(x, column=7).value,
+    #     "job7": ws.cell(x, column=8).value,
+    #     "job8": ws.cell(x, column=9).value,
+    #     "job9": ws.cell(x, column=10).value,
+    #     "job10": ws.cell(x, column=11).value,
+    #     "count": ws.cell(x, column=12).value
+    # })
 
+for i in licList:
+    print(i)
 
+#For each licensee in list
+startingrow=2
 for lic in licList:
-    print(lic)
-    licSearchBox.send_keys(lic["licensee"])
+
+    #Search the licensee number
+    licSearchBox.send_keys(lic)
     licSearchBox.send_keys(Keys.RETURN)
     time.sleep(2)
-    print(lic["licensee"])
-    licList["lic"].append({
-        "results": driver.find_element(By.XPATH, value="//*[contains(@id    , 'ngdialog')]")
-    })
-    # print(licList[lic])
+
+    try:
+        table = driver.find_element(By.CLASS_NAME, value='table')
+    except:
+
+    #Get the popup box results and filter out each job
+    results = driver.find_element(By.CLASS_NAME, value='table').text
+    results.replace('\\n', '|')
+    licList[lic] += [results]
+    ws.cell(startingrow, column=1).value = str(lic)
+    ws.cell(startingrow, column=2).value = str(licList[lic])
+    startingrow += 1
+    print(licList[lic])
+
+    wb.save('(new)CS Associated DOBNOW Filings.xlsx')
+    print("saved")
+    # try:
+    #     licList[lic] += [results.text]
+    #     ws.cell(startingrow, column=2).value = licList[lic]
+    #     print(licList[lic])
+    # except:
+    #     print("error")
+    # finally:
+    #     driver.quit()
+        # for row in results.find_element(By.XPATH, value='//*[contains(@id, "ngdialog")]/div[2]/div[2]/div[2]/table/tbody/tr[1]/td[1]'):
+
+
+    # // *[ @ id = "ngdialog3"] / div[2] / div[2] / div[2] / table / tbody / tr[1] / td[1]
+
+    # lic["job1"] = driver.find_element(By.XPATH, value="//*[contains(@id    , 'ngdialog')]").text
+    # lic["job1"]= results
+    # licList[lic] += [results]
+    # print(lic + " : " + str(licList[lic]))
+
+
     licSearchBox.clear()
 
-print(licList[1])
 
-# #for each licensee in excel list
+
+
+# #for each licensee in Excel list
 # for item in list:
 #     #Search the licensee number
 #     licSearchBox.send_keys(item)
