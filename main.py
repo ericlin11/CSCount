@@ -4,28 +4,23 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.keys import Keys
 import openpyxl
-from openpyxl.styles.fills import PatternFill
-from openpyxl.styles import Font, colors
 
-url = 'https://a810-bisweb.nyc.gov/bisweb/JobsQueryByNumberServlet?passjobnumber=520465416&passdocnumber=&go10=+GO+&requestid=0'
+url = 'https://a810-dobnow.nyc.gov/publish/Index.html#!/'
+# file_name = input("Please enter the filename: (Copy of Active CS licensees 9-11-23.xlsx) ")
+# sheet_name = input("Please enter the sheet name of the excel: ")
+# lic_col = int(input("What column number is the licensee number? "))
+# starting_col = int(input("What column do you want to insert data, starting with Job Count? (22) "))
+# starting_row = int(input("What row do you want to start with? "))
+
+
+file_name = "Copy of Active CS licensees 9-11-23.xlsx"
+sheet_name = "Sheet1"
+lic_col = 1
+starting_row = 2
 
 driver = webdriver.Chrome()
 driver.get(url)
-
-time.sleep(5)
-#
-# driver = webdriver.Chrome()
-# driver.get('https://a810-bisweb.nyc.gov/bisweb/bsqpm01.jsp')
-# driver.find_element(By.XPATH, '/html/body/div/table/tbody/tr[4]/td/table/tbody/tr/td/div/table/tbody/tr[3]/td[3]/a').click()
-# driver.find_element(By.ID, 'passjobnumber1').send_keys('520465416')
-# driver.find_element(By.XPATH, '/html/body/div/table[2]/tbody/tr[17]/td/table/tbody/tr/td[3]/input').click()
-# driver.delete_all_cookies()
-
-time.sleep(5)
-driver.get("https://a810-dobnow.nyc.gov/publish/Index.html#!/")
 driver.delete_all_cookies()
-
-
 
 print(driver.title)
 
@@ -46,101 +41,73 @@ select.select_by_value('5')
 # Type Licensee Number into the search by license field
 lic_search_box = driver.find_element(By.ID, value='LicLicenseNumbere')
 
-file_name = input("Please enter the filename: ")
-sheet_name = input("Please enter the sheet name of the excel: ")
-lic_col = int(input("What column number is the licensee number? "))
-job_col = int(input("What column is the job number? "))
-com_col = int(input("What column is the Comment? "))
-starting_row = int(input("What row do you want to start with? "))
-
-#Opens Excel file and go to specified worksheet
+# Opens Excel file and go to specified worksheet
 wb = openpyxl.load_workbook(file_name)
 ws = wb[sheet_name]
+
 
 def close_btn():
     try:
         close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[3]/div/button")
         close_btn.click()
     except:
-        close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[1]/div[3]/button")
-        close_btn.click()
+        try:
+            close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[1]/div[3]/button")
+            close_btn.click()
+        except:
+            driver.quit()
+            driver.get(url)
+            driver.delete_all_cookies()
+            lic_btn.click()
+            time.sleep(2)
+            lic_type_btn.click()
+            time.sleep(2)
+            select.select_by_value('5')
 
-def close_tab():
-    driver.find_element(By.TAG_NAME, "body").send_keys(Keys.CONTROL + 'w')
 
-
-for x in range(2, ws.max_row + 1):
+for x in range(starting_row, ws.max_row):
+    starting_col = 22
+    job_count = 0
     lic_num = ws.cell(starting_row, lic_col).value
-    job_num = ws.cell(starting_row, job_col).value
 
-    #Fills License Search box with licensee number and searches
-    lic_search_box.send_keys(lic_num)
-    lic_search_box.send_keys(Keys.RETURN)
-    time.sleep(3)
+    if ws.cell(starting_row, starting_col).value is None:
 
-    #Search BIS or DOBNOW Job, if it's under Licensee, Comment 'Good'
-    if job_num in driver.page_source:
-        print(str(starting_row) + ": Yes: " + lic_num + ": " + job_num)
-        ws.cell(starting_row, com_col).value = "Good"
+        # Fills License Search box with licensee number and searches
+        lic_search_box.send_keys(lic_num)
+        lic_search_box.send_keys(Keys.RETURN)
+        time.sleep(2)
 
-    #If Job Number is a BIS Job (All numbers) and not under Licensee, Search the BIS Intranet
-    if job_num.isdigit() and len(job_num) == 9:
+        # If there is no record, Total Job Count = 0
+        # Example: License = 026836
+        if "No records found for the given license number." in driver.page_source:
+            print(str(starting_row) + " : No records")
+            ws.cell(starting_row, starting_col).value = 0
 
-        #Open a new tab to BIS Intranet
-        driver.find_element(By.TAG_NAME, 'body').send_keys(Keys.CONTROL + 't')
-        driver.get('https://a810-bisweb.nyc.gov/bisweb/JobsQueryByNumberServlet?passjob_number=' + job_num +
-                   '&passdocnumber=&go10=+GO+&requestid=0')
-        driver.delete_all_cookies()
-        time.sleep(3)
+        # Get the Total Job Count and Job Numbers and save it to Excel
+        # Example: License = 026868
+        elif "Associated Jobs with Active Permits" in driver.page_source:
+            for i in range(1, 10):
+                try:
+                    job = driver.find_element(By.XPATH,
+                                              "//*[contains(@id, 'ngdialog')]/div[2]/div[2]/div[2]/table/tbody/tr[" + str(
+                                                  i) + "]/td[1]").text
+                    starting_col += 1
+                    ws.cell(starting_row, starting_col).value = job
+                    i += 1
+                    job_count += 1
+                except:
+                    print(str(starting_row) + " : " + str(job_count) + " records")
+                    ws.cell(starting_row, column=22).value = job_count
+                    break
 
-        #Check if job is signed off, Comment 'Signed Off'
-        if "SIGNED OFF" in driver.page_source:
-            print(str(starting_row) + ": Signed Off: " + lic_num + ": " + job_num)
-            ws.cell(starting_row, com_col).value = "Signed Off"
+        # Else Highlight Red
 
-        #Check if job is released, Comment 'Released'
-        elif "RELEASE CS-SSM-SSC" in driver.page_source:
-            print(str(starting_row) + ": Released: " + lic_num + ": " + job_num)
-            ws.cell(starting_row, com_col).value = "Released"
+        wb.save(file_name)
 
-        #Go to All Permit, select the latest permit
-        else:
-            all_permit_btn = driver.find_element(By.XPATH, "/html/body/center/table[4]/tbody/tr[2]/td[5]/a")
-            all_permit_btn.click()
-            permit_btn = driver.find_element(By.XPATH, "/html/body/center/table[4]/tbody/tr[3]/td[1]/a")
-            permit_btn.click()
+        lic_search_box.clear()
 
-            #Compare license number, if it is not the same, Comment 'Superseded'
-            if job_num not in driver.page_source:
-                print(str(starting_row) + ": Superseded: " + lic_num + ": " + job_num)
-                ws.cell(starting_row, com_col).value = "Superseded"
+        close_btn()
 
-            #If it's the same, highlight the Comment, to check later manaully
-            if job_num not in driver.page_source:
-                print(str(starting_row) + ": No: " + lic_num + ": " + job_num)
-                cellFill = PatternFill(patternType='solid', fgColor=colors.Color(rgb='00FF0000'))
-                ws.cell(starting_row, com_col).fill = cellFill
-
-        #Close the BIS Intranet tab
-        close_tab()
-
-    #Search DOBNOW Job without the Filing# (I1, S1, ...), if it's under Licensee, Comment 'Another Filing# Counted'
-    elif job_num[:9] in driver.page_source:
-        print(str(starting_row) + ": Another job: " + lic_num + ": " + job_num)
-        ws.cell(starting_row, com_col).value = "Another job counted"
-
-    #Highlight the Comment cell to search manually
-    else:
-        print(str(starting_row) + ": No: " + lic_num + ": " + job_num)
-        cellFill = PatternFill(patternType='solid', fgColor=colors.Color(rgb='00FF0000'))
-        ws.cell(starting_row, com_col).fill = cellFill
-
-    wb.save(file_name)
-
-    close_btn()
-
-    lic_search_box.clear()
     starting_row += 1
-    time.sleep(1)
 
 time.sleep(15)
