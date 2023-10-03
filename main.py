@@ -5,27 +5,58 @@ from selenium.webdriver.support.ui import Select
 from selenium.webdriver.common.keys import Keys
 import openpyxl
 
-url = 'https://a810-dobnow.nyc.gov/publish/Index.html#!/'
-# file_name = input("Please enter the filename: (Copy of Active CS licensees 9-11-23.xlsx) ")
-# sheet_name = input("Please enter the sheet name of the excel: ")
-# lic_col = int(input("What column number is the licensee number? "))
-# starting_col = int(input("What column do you want to insert data, starting with Job Count? (22) "))
-# starting_row = int(input("What row do you want to start with? "))
+def close_btn():
+    try:
+        close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[3]/div/button")
+        close_btn.click()
+    except:
+        try:
+            close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[1]/div[3]/button")
+            close_btn.click()
+        except:
+            driver.quit()
+            driver.get("https://a810-dobnow.nyc.gov/publish/Index.html#!/")
+            driver.delete_all_cookies()
+            lic_btn.click()
+            time.sleep(2)
+            lic_type_btn.click()
+            time.sleep(2)
+            select.select_by_value('5')
 
+#"C:\Users\ericl\PycharmProjects\CSCount\Copy of Active CS licensees 9-11-23.xlsx"
+#Try to open Excel File. If Excel File doesn't exist or Filepath is wrong, raise error.
+file_name = input("Please enter the Filepath of Excel File: ")
+file_name.replace('\\','/')
+print(file_name)
+try:
+    wb = openpyxl.load_workbook(file_name)
+except:
+    print("Invalid File Name: " + file_name)
+    print("Exiting...")
+    exit()
 
-file_name = "Copy of Active CS licensees 9-11-23.xlsx"
-sheet_name = "Sheet1"
-lic_col = 1
-starting_row = 2
+#Try to open Sheet. If name of Sheet doesn't exist, raise error.
+sheet_name = input("Please enter the sheet name of the excel (Sheet1): ")
+try:
+    ws = wb[sheet_name]
+except:
+    print("Invalid Sheet Name: " + sheet_name)
+    print("Exiting...")
+    exit()
 
+lic_col = int(input("Enter CS Licensee Column Number (Column A = 1): "))
+starting_col = int(input("What column do you want to insert data, starting with Job Count? (22) "))
+starting_row = int(input("What row do you want to start with? (2)"))
+
+#Open a Chrome window with the url
 driver = webdriver.Chrome()
-driver.get(url)
+driver.get("https://a810-dobnow.nyc.gov/publish/Index.html#!/")
 driver.delete_all_cookies()
 
-print(driver.title)
+time.sleep(2)
 
 # Click the Search By License button
-lic_btn = driver.find_element(By.XPATH, value="//*[@id='content']/div[3]/div[1]/div[4]/div[2]/button")
+lic_btn = driver.find_element(By.XPATH, value="//*[@id='content']/div[2]/div[1]/div[4]/div[2]/button")
 lic_btn.click()
 time.sleep(2)
 
@@ -41,32 +72,7 @@ select.select_by_value('5')
 # Type Licensee Number into the search by license field
 lic_search_box = driver.find_element(By.ID, value='LicLicenseNumbere')
 
-# Opens Excel file and go to specified worksheet
-wb = openpyxl.load_workbook(file_name)
-ws = wb[sheet_name]
-
-
-def close_btn():
-    try:
-        close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[3]/div/button")
-        close_btn.click()
-    except:
-        try:
-            close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[1]/div[3]/button")
-            close_btn.click()
-        except:
-            driver.quit()
-            driver.get(url)
-            driver.delete_all_cookies()
-            lic_btn.click()
-            time.sleep(2)
-            lic_type_btn.click()
-            time.sleep(2)
-            select.select_by_value('5')
-
-
 for x in range(starting_row, ws.max_row):
-    starting_col = 22
     job_count = 0
     lic_num = ws.cell(starting_row, lic_col).value
 
@@ -110,4 +116,5 @@ for x in range(starting_row, ws.max_row):
 
     starting_row += 1
 
-time.sleep(15)
+print("Done")
+time.sleep(5)
