@@ -106,8 +106,6 @@ for x in range(starting_row, ws.max_row):
                     ws.cell(starting_row, column=22).value = job_count
                     break
 
-        # Else Highlight Red
-
         wb.save(file_name)
 
         lic_search_box.clear()
