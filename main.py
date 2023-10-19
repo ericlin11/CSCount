@@ -7,27 +7,16 @@ import openpyxl
 
 def close_btn():
     try:
-        close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[3]/div/button")
-        close_btn.click()
+        lic_search_box.send_keys(Keys.ESCAPE)
+        time.sleep(1)
     except:
-        try:
-            close_btn = driver.find_element(By.XPATH, "//*[contains(@id, 'ngdialog')]/div[2]/div[1]/div[3]/button")
-            close_btn.click()
-        except:
-            driver.quit()
-            driver.get("https://a810-dobnow.nyc.gov/publish/Index.html#!/")
-            driver.delete_all_cookies()
-            lic_btn.click()
-            time.sleep(2)
-            lic_type_btn.click()
-            time.sleep(2)
-            select.select_by_value('5')
+        print("Error")
 
-#"C:\Users\ericl\PycharmProjects\CSCount\Copy of Active CS licensees 9-11-23.xlsx"
-#Try to open Excel File. If Excel File doesn't exist or Filepath is wrong, raise error.
+# "C:\Users\ericl\PycharmProjects\CSCount\Copy of Active CS licensees 9-11-23.xlsx"
+# Try to open Excel File. If Excel File doesn't exist or Filepath is wrong, raise error.
 file_name = input("Please enter the Filepath of Excel File: ")
+# file_name = "C:/Users\ericl\Desktop\CS Reports\Copy of Active CS licensees 10-10-23.xlsx"
 file_name.replace('\\','/')
-print(file_name)
 try:
     wb = openpyxl.load_workbook(file_name)
 except:
@@ -36,7 +25,8 @@ except:
     exit()
 
 #Try to open Sheet. If name of Sheet doesn't exist, raise error.
-sheet_name = input("Please enter the sheet name of the excel (Sheet1): ")
+# sheet_name = input("Please enter the sheet name of the excel (Sheet1): ")
+sheet_name = 'Sheet1'
 try:
     ws = wb[sheet_name]
 except:
@@ -45,8 +35,11 @@ except:
     exit()
 
 lic_col = int(input("Enter CS Licensee Column Number (Column A = 1): "))
-starting_col = int(input("What column do you want to insert data, starting with Job Count? (22) "))
-starting_row = int(input("What row do you want to start with? (2)"))
+starting_col = int(input("What column do you want to insert data, starting with Job Count? "))
+starting_row = int(input("What row do you want to start with? "))
+# lic_col = 1
+# starting_col = 22
+# starting_row = 3
 
 #Open a Chrome window with the url
 driver = webdriver.Chrome()
@@ -56,7 +49,7 @@ driver.delete_all_cookies()
 time.sleep(2)
 
 # Click the Search By License button
-lic_btn = driver.find_element(By.XPATH, value="//*[@id='content']/div[2]/div[1]/div[4]/div[2]/button")
+lic_btn = driver.find_element(By.XPATH, value="//*[@id='content']/div[3]/div[1]/div[4]/div[2]/button")
 lic_btn.click()
 time.sleep(2)
 
@@ -92,13 +85,14 @@ for x in range(starting_row, ws.max_row):
         # Get the Total Job Count and Job Numbers and save it to Excel
         # Example: License = 026868
         elif "Associated Jobs with Active Permits" in driver.page_source:
+            temp_col = starting_col
             for i in range(1, 10):
                 try:
                     job = driver.find_element(By.XPATH,
                                               "//*[contains(@id, 'ngdialog')]/div[2]/div[2]/div[2]/table/tbody/tr[" + str(
                                                   i) + "]/td[1]").text
-                    starting_col += 1
-                    ws.cell(starting_row, starting_col).value = job
+                    temp_col += 1
+                    ws.cell(starting_row, temp_col).value = job
                     i += 1
                     job_count += 1
                 except:
